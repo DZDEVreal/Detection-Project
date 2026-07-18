@@ -1,6 +1,5 @@
 import matplotlib.pyplot as plt
 
-
 def plot_curves(history_dict: dict):
     epochs = range(len(history_dict["train_loss"]))
 
