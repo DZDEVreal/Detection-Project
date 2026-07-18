@@ -24,6 +24,8 @@ def train(
         model = torch.compile(model)
         print("Model has been Compiled!")
 
+    history_dict = {"train_loss": [], "train_acc": [], "test_loss": [], "test_acc": []}
+
     for epoch in tqdm(range(epochs)):
         train_loss, train_acc = train_step(
             model=model,
@@ -40,6 +42,12 @@ def train(
             test_dataloader=test_dataloader,
             device=device,
         )
+
+        history_dict["train_loss"].append(train_loss)
+        history_dict["train_acc"].append(train_acc * 100)
+        history_dict["test_loss"].append(test_loss)
+        history_dict["test_acc"].append(test_acc * 100)
+
         if epoch % print_per_epoch == 0:
             print(
                 f"\nEpoch: {epoch} | Train Loss: {train_loss:.4f}, Train Accuracy: {train_acc * 100:.2f} | Test Loss: {test_loss:.4f}, Test Accuracy: {test_acc * 100:.2f}\n"
