@@ -1,28 +1,30 @@
-import torch
-import torch.nn as nn
-import torch.optim as optim
-
 from torchmetrics import Metric
 from torch.utils.data import DataLoader
-from engine import train_step, test_step
+from module.engine import train_step, test_step
 from tqdm.auto import tqdm
+import torch
 
 
 def train(
     epochs: int,
-    model: nn.Module,
-    optimizer: optim.Optimizer,
-    loss_fn: nn.Module,
+    model: torch.nn.Module,
+    optimizer: torch.optim.Optimizer,
+    loss_fn: torch.nn.Module,
     train_dataloader: DataLoader,
     test_dataloader: DataLoader,
     acc_metric: Metric,
+    scheduler: torch.optim.lr_scheduler.ReduceLROnPlateau = None,
     is_compiled: bool = False,
     device: str = "cuda" if torch.cuda.is_available() else "cpu",
     print_per_epoch: int = 1,
+    patience: int = 5,
 ):
     if is_compiled:
         model = torch.compile(model)
-        print("Model has been Compiled!")
+
+    best_test_loss = float("inf")
+    epochs_no_improve = 0
+    best_state = None
 
     history_dict = {"train_loss": [], "train_acc": [], "test_loss": [], "test_acc": []}
 
@@ -43,12 +45,29 @@ def train(
             device=device,
         )
 
+        if scheduler is not None:
+            scheduler.step(test_loss)
+
         history_dict["train_loss"].append(train_loss)
         history_dict["train_acc"].append(train_acc * 100)
         history_dict["test_loss"].append(test_loss)
         history_dict["test_acc"].append(test_acc * 100)
 
+        if test_loss < best_test_loss:
+            best_test_loss = test_loss
+            epochs_no_improve = 0
+            best_state = {k: v.cpu().clone() for k, v in model.state_dict().items()}
+        else:
+            epochs_no_improve += 1
+
         if epoch % print_per_epoch == 0:
             print(
                 f"\nEpoch: {epoch} | Train Loss: {train_loss:.4f}, Train Accuracy: {train_acc * 100:.2f} | Test Loss: {test_loss:.4f}, Test Accuracy: {test_acc * 100:.2f}\n"
             )
+
+        if epochs_no_improve >= patience:
+            print(f"Early stopping triggered after {epoch + 1} epochs")
+            break
+
+    if best_state is not None:
+        model.load_state_dict(best_state)
