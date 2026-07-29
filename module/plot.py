@@ -8,33 +8,37 @@ denormalize = transforms.Normalize(
     std=[1 / 0.229, 1 / 0.224, 1 / 0.225]
 )
 
+plt.rcParams.update({"axes.grid": True, "grid.alpha": 0.3, "grid.linestyle": "--"})
+
 def plot_curves(history_dict: dict, save_dir: str = "outputs"):
     os.makedirs(save_dir, exist_ok=True)
     epochs = range(len(history_dict["train_loss"]))
 
-    plt.figure(figsize=(14, 5))
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
 
-    plt.subplot(1, 2, 1)
-    plt.plot(epochs, history_dict["train_loss"], label="Train Loss", color="royalblue", linewidth=2)
-    plt.plot(epochs, history_dict["test_loss"], label="Test Loss", color="darkorange", linewidth=2)
-    plt.title("Loss Curves", fontsize=14)
-    plt.xlabel("Epochs", fontsize=12)
-    plt.ylabel("Loss Value", fontsize=12)
-    plt.grid(True, linestyle="--", alpha=0.6)
-    plt.legend(fontsize=11)
+    ax1.plot(epochs, history_dict["train_loss"], label="Train", color="#4C72B0", linewidth=2)
+    ax1.plot(epochs, history_dict["test_loss"], label="Test", color="#DD8452", linewidth=2)
+    ax1.set_title("Loss")
+    ax1.set_xlabel("Epoch")
+    ax1.set_ylabel("Loss")
+    ax1.legend()
 
-    plt.subplot(1, 2, 2)
-    plt.plot(epochs, history_dict["train_acc"], label="Train Acc", color="royalblue", linewidth=2)
-    plt.plot(epochs, history_dict["test_acc"], label="Test Acc", color="darkorange", linewidth=2)
-    plt.title("Accuracy Curves", fontsize=14)
-    plt.xlabel("Epochs", fontsize=12)
-    plt.ylabel("Percentage (%)", fontsize=12)
-    plt.grid(True, linestyle="--", alpha=0.6)
-    plt.legend(fontsize=11)
+    ax2.plot(epochs, history_dict["train_acc"], label="Train", color="#4C72B0", linewidth=2)
+    ax2.plot(epochs, history_dict["test_acc"], label="Test", color="#DD8452", linewidth=2)
+    ax2.set_title("Accuracy")
+    ax2.set_xlabel("Epoch")
+    ax2.set_ylabel("Accuracy (%)")
+    ax2.legend()
 
-    plt.tight_layout()
-    plt.savefig(os.path.join(save_dir, "training_curves.png"), dpi=150)
-    plt.close()
+    best_test_loss = min(history_dict["test_loss"])
+    best_test_acc = max(history_dict["test_acc"])
+    ax1.axhline(best_test_loss, color="#DD8452", ls=":", alpha=0.5)
+    ax2.axhline(best_test_acc, color="#DD8452", ls=":", alpha=0.5)
+
+    fig.tight_layout()
+    fig.savefig(os.path.join(save_dir, "training_curves.png"), dpi=150)
+    plt.close(fig)
+
 
 def plot_predictions(
     model: torch.nn.Module,
@@ -52,31 +56,37 @@ def plot_predictions(
 
     with torch.inference_mode():
         logits = model(images)
+        probs = torch.softmax(logits, dim=1)
         preds = logits.argmax(dim=1)
 
     images = images.cpu()
     labels = labels.cpu()
     preds = preds.cpu()
+    probs = probs.cpu()
 
     cols = 4
     rows = (num_samples + cols - 1) // cols
-    plt.figure(figsize=(cols * 3.5, rows * 3.5))
+    fig, axes = plt.subplots(rows, cols, figsize=(cols * 3.5, rows * 4))
+    axes = axes.flatten()
 
-    for i in range(len(images)):
-        plt.subplot(rows, cols, i + 1)
-        img = images[i]
-        img = denormalize(img)
-        img = img.permute(1, 2, 0).clamp(0, 1)
-        plt.imshow(img)
+    correct = 0
+    for i in range(num_samples):
+        img = denormalize(images[i]).permute(1, 2, 0).clamp(0, 1)
+        axes[i].imshow(img)
 
-        true_label = class_names[labels[i]]
-        pred_label = class_names[preds[i]]
-        correct = labels[i] == preds[i]
-        color = "green" if correct else "red"
+        is_correct = labels[i] == preds[i]
+        correct += int(is_correct)
+        color = "#2E8B57" if is_correct else "#DC143C"
+        title = f"{class_names[preds[i]]} ({probs[i][preds[i]]:.0%})\ntrue: {class_names[labels[i]]}"
 
-        plt.title(f"True: {true_label}\nPred: {pred_label}", fontsize=9, color=color)
-        plt.axis("off")
+        axes[i].set_title(title, fontsize=9, color=color)
+        axes[i].axis("off")
 
-    plt.tight_layout()
-    plt.savefig(os.path.join(save_dir, "predictions.png"), dpi=150)
-    plt.close()
+    for i in range(num_samples, len(axes)):
+        axes[i].axis("off")
+
+    fig.suptitle(f"Accuracy: {correct}/{num_samples} ({correct / num_samples:.0%})",
+                 fontsize=13, y=1.02)
+    fig.tight_layout()
+    fig.savefig(os.path.join(save_dir, "predictions.png"), dpi=150, bbox_inches="tight")
+    plt.close(fig)
