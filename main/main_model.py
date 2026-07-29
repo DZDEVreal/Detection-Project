@@ -10,6 +10,7 @@ from module.export import export_to_onnx
 from torch.utils.data import DataLoader
 from torchmetrics import Accuracy
 from module.train import train
+from module.plot import plot_curves, plot_predictions
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Using device: {device}")
@@ -42,7 +43,7 @@ scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
 acc_metric = Accuracy(task="multiclass", num_classes=len(class_names)).to(device)
 
 print("Starting training...")
-train(
+history = train(
     epochs=20,
     model=model,
     optimizer=optimizer,
@@ -56,6 +57,9 @@ train(
     print_per_epoch=1,
     patience=5
 )
+
+plot_curves(history, save_dir="outputs")
+plot_predictions(model, test_dataloader, class_names, device, save_dir="outputs")
 
 torch.save(model.state_dict(), "tumor_classifier.pth")
 print("\nPyTorch weights saved to 'tumor_classifier.pth'")
