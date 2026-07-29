@@ -13,7 +13,7 @@ def export_to_onnx(
         dummy_input,
         f=output_path,
         dynamo=True,
-        opset_version=17,
+        opset_version=18,
         input_names=["image"],
         output_names=["class_logits"],
         dynamic_axes={"image": {0: "batch_size"}}
