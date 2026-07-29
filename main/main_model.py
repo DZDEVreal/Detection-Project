@@ -41,17 +41,17 @@ if __name__ == "__main__":
     model = VisionModel(output_shape=len(class_names), freeze_base=False).to(device)
 
     loss_fn = nn.CrossEntropyLoss(weight=train_data.class_weights.to(device), label_smoothing=0.1)
-    optimizer = torch.optim.Adam(model.parameters(), lr=5e-5, weight_decay=1e-4)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-3)
 
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode="min", factor=0.5, patience=2
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+        optimizer, T_max=30, eta_min=1e-6
     )
 
     acc_metric = Accuracy(task="multiclass", num_classes=len(class_names)).to(device)
 
     print("Starting training...")
     history = train(
-        epochs=20,
+        epochs=30,
         model=model,
         optimizer=optimizer,
         loss_fn=loss_fn,
@@ -62,7 +62,9 @@ if __name__ == "__main__":
         is_compiled=True,
         device=device,
         print_per_epoch=1,
-        patience=5
+        patience=7,
+        mixup_alpha=0.2,
+        cutmix_alpha=1.0,
     )
 
     plot_curves(history, save_dir="outputs")

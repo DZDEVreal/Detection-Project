@@ -13,11 +13,13 @@ def train(
     train_dataloader: DataLoader,
     test_dataloader: DataLoader,
     acc_metric: Metric,
-    scheduler: torch.optim.lr_scheduler.ReduceLROnPlateau = None,
+    scheduler: object = None,
     is_compiled: bool = False,
     device: str = "cuda" if torch.cuda.is_available() else "cpu",
     print_per_epoch: int = 1,
     patience: int = 5,
+    mixup_alpha: float = 0.0,
+    cutmix_alpha: float = 0.0,
 ):
     if is_compiled:
         model = torch.compile(model)
@@ -36,6 +38,8 @@ def train(
             acc_metric=acc_metric,
             train_dataloader=train_dataloader,
             device=device,
+            mixup_alpha=mixup_alpha,
+            cutmix_alpha=cutmix_alpha,
         )
         test_loss, test_acc = test_step(
             model=model,
@@ -46,7 +50,10 @@ def train(
         )
 
         if scheduler is not None:
-            scheduler.step(test_loss)
+            if isinstance(scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
+                scheduler.step(test_loss)
+            else:
+                scheduler.step()
 
         history_dict["train_loss"].append(train_loss)
         history_dict["train_acc"].append(train_acc * 100)
