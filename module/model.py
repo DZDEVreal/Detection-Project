@@ -11,10 +11,19 @@ class VisionModel(nn.Module):
                 param.requires_grad = False
 
         nfc = self.base.heads[0].in_features
-        self.base.heads = nn.Sequential(
-            nn.Dropout(0.3),
-            nn.Linear(nfc, output_shape)
-        )
+
+        if freeze_base:
+            self.base.heads = nn.Sequential(
+                nn.Linear(nfc, 256),
+                nn.ReLU(),
+                nn.Dropout(0.4),
+                nn.Linear(256, output_shape)
+            )
+        else:
+            self.base.heads = nn.Sequential(
+                nn.Dropout(0.3),
+                nn.Linear(nfc, output_shape)
+            )
 
     def forward(self, x):
         return self.base(x)
