@@ -38,10 +38,10 @@ if __name__ == "__main__":
     print(f"Classes found: {class_names}")
     print(f"Train size: {len(train_data)} images | Test size: {len(test_data)} images\n")
 
-    model = VisionModel(output_shape=len(class_names), freeze_base=True).to(device)
+    model = VisionModel(output_shape=len(class_names), freeze_base=False).to(device)
 
     loss_fn = nn.CrossEntropyLoss(weight=train_data.class_weights.to(device), label_smoothing=0.1)
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-4)
+    optimizer = torch.optim.Adam(model.parameters(), lr=5e-5, weight_decay=1e-4)
 
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, mode="min", factor=0.5, patience=2
