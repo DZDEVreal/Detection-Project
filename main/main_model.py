@@ -41,7 +41,7 @@ if __name__ == "__main__":
     model = VisionModel(output_shape=len(class_names), freeze_base=False).to(device)
 
     loss_fn = nn.CrossEntropyLoss(weight=train_data.class_weights.to(device), label_smoothing=0.1)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-3)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=5e-5, weight_decay=1e-3)
 
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
         optimizer, T_max=30, eta_min=1e-6
