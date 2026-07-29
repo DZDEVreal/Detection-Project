@@ -68,8 +68,9 @@ def train(
             epochs_no_improve += 1
 
         if epoch % print_per_epoch == 0:
+            acc_str = f"{train_acc * 100:.2f}" if train_acc > 0 else "N/A"
             print(
-                f"\nEpoch: {epoch} | Train Loss: {train_loss:.4f}, Train Accuracy: {train_acc * 100:.2f} | Test Loss: {test_loss:.4f}, Test Accuracy: {test_acc * 100:.2f}\n"
+                f"\nEpoch: {epoch} | Train Loss: {train_loss:.4f}, Train Acc: {acc_str}% | Test Loss: {test_loss:.4f}, Test Acc: {test_acc * 100:.2f}%\n"
             )
 
         if epochs_no_improve >= patience:
