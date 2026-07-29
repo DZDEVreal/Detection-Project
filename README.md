@@ -20,7 +20,7 @@ Place images in `dataset/Training/<class>/` and `dataset/Testing/<class>/`.
 python main/main_model.py
 ```
 
-Outputs `tumor_classifier.pth` (PyTorch weights) and `tumor_classifier.onnx` (ONNX export).
+Outputs `tumor_classifier.pth` (PyTorch weights), `tumor_classifier.onnx` (ONNX export), and `outputs/training_curves.png` + `outputs/predictions.png` (visualizations).
 
 ## Config
 
